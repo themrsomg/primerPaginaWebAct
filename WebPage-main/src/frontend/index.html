@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Gestor de Series - Por Ver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e6e6e6;
+            padding: 20px;
+        }
+        .contenedor {
+            background-color: white;
+            border: 2px solid black;
+            padding: 15px;
+            width: 500px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        input {
+            margin-bottom: 5px;
+            padding: 2px;
+        }
+        button {
+            background-color: #d4d0c8;
+            border: 1px solid #808080;
+            padding: 3px 8px;
+            cursor: pointer;
+        }
+        button:active {
+            border-style: inset;
+        }
+        #mensaje-caja {
+            padding: 10px;
+            border: 1px solid black;
+            display: none;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .exito { background-color: #ccffcc; color: darkgreen; }
+        .error { background-color: #ffcccc; color: darkred; }
+        ul { border: 1px inset #ccc; padding: 10px 10px 10px 30px; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <h1>Gestor de Series "Por Ver"</h1>
+    
+    <div id="mensaje-caja"></div>
+
+    <div class="contenedor">
+        <h2>Mi Lista Pendiente (GET)</h2>
+        <button onclick="cargarPorVer()">Actualizar Lista</button>
+        <ul id="lista-por-ver">
+            <li>Presiona "Actualizar Lista" para cargar...</li>
+        </ul>
+    </div>
+
+    <div class="contenedor">
+        <h2>Agregar a Por Ver (POST)</h2>
+        <label>Título: </label>
+        <input type="text" id="input-crear" placeholder="Ej: Breaking Bad">
+        <br>
+        <button onclick="crearPorVer()">Guardar en Pendientes</button>
+    </div>
+
+    <div class="contenedor">
+        <h2>Corregir Nombre (PATCH)</h2>
+        <label>Nombre actual: </label>
+        <input type="text" id="input-viejo" placeholder="Ej: The O.C.">
+        <br>
+        <label>Nombre nuevo: </label>
+        <input type="text" id="input-nuevo" placeholder="Ej: The OC">
+        <br>
+        <button onclick="actualizarPorVer()">Actualizar Serie</button>
+    </div>
+
+    <div class="contenedor">
+        <h2>Eliminar de Lista (DELETE)</h2>
+        <label>Título a eliminar: </label>
+        <input type="text" id="input-eliminar" placeholder="Nombre de la serie">
+        <br>
+        <button onclick="eliminarPorVer()">Eliminar Serie</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        function mostrarMensaje(texto, esError = false) {
+            const caja = document.getElementById('mensaje-caja');
+            caja.style.display = 'block';
+            caja.innerText = texto;
+            
+            if (esError) {
+                caja.className = 'error';
+            } else {
+                caja.className = 'exito';
+            }
+
+            setTimeout(() => { caja.style.display = 'none'; }, 4000);
+        }
+
+        function limpiarInputs() {
+            document.getElementById('input-crear').value = '';
+            document.getElementById('input-viejo').value = '';
+            document.getElementById('input-nuevo').value = '';
+            document.getElementById('input-eliminar').value = '';
+        }
+
+        // GET: Listar usando la propiedad 'porVer' del objeto listasUsuario
+        async function cargarPorVer() {
+            try {
+                const respuesta = await fetch(`${API_URL}/listas`);
+                const data = await respuesta.json();
+
+                if (respuesta.ok) {
+                    const ul = document.getElementById('lista-por-ver');
+                    ul.innerHTML = '';
+                    
+                    // Accedemos específicamente a la lista 'porVer'
+                    const porVer = data.listas.porVer; 
+                    
+                    if (porVer.length === 0) {
+                        ul.innerHTML = '<li>No tienes series pendientes por ver.</li>';
+                    } else {
+                        porVer.forEach(serie => {
+                            const li = document.createElement('li');
+                            li.innerText = serie;
+                            ul.appendChild(li);
+                        });
+                    }
+                } else {
+                    mostrarMensaje(`Error ${respuesta.status}: ${data.error}`, true);
+                }
+            } catch (error) {
+                mostrarMensaje('Error 500: No se pudo conectar al servidor.', true);
+            }
+        }
+
+        // POST: Crear en la ruta /api/por-ver
+        async function crearPorVer() {
+            const titulo = document.getElementById('input-crear').value;
+
+            if (titulo.trim() === "") {
+                mostrarMensaje('Por favor, ingresa un título para agregar.', true);
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`${API_URL}/por-ver`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ titulo: titulo })
+                });
+                
+                const data = await respuesta.json();
+
+                if (respuesta.ok) {
+                    mostrarMensaje(data.mensaje);
+                    limpiarInputs();
+                    cargarPorVer();
+                } else {
+                    mostrarMensaje(`Error ${respuesta.status}: ${data.error}`, true);
+                }
+            } catch (error) {
+                mostrarMensaje('Error de red al intentar guardar.', true);
+            }
+        }
+
+        // PATCH: Actualizar en la ruta /api/por-ver/:nombre
+        async function actualizarPorVer() {
+            const tituloViejo = document.getElementById('input-viejo').value;
+            const tituloNuevo = document.getElementById('input-nuevo').value;
+
+            if (tituloViejo.trim() === "" || tituloNuevo.trim() === "") {
+                mostrarMensaje('Debes llenar ambos campos para actualizar.', true);
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`${API_URL}/por-ver/${encodeURIComponent(tituloViejo)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nuevoTitulo: tituloNuevo })
+                });
+
+                const data = await respuesta.json();
+
+                if (respuesta.ok) {
+                    mostrarMensaje(data.mensaje);
+                    limpiarInputs();
+                    cargarPorVer();
+                } else {
+                    mostrarMensaje(`Error ${respuesta.status}: ${data.error}`, true);
+                }
+            } catch (error) {
+                mostrarMensaje('Error de red al intentar actualizar.', true);
+            }
+        }
+
+        // DELETE: Eliminar en la ruta /api/por-ver/:nombre
+        async function eliminarPorVer() {
+            const titulo = document.getElementById('input-eliminar').value;
+
+            if (titulo.trim() === "") {
+                mostrarMensaje('Escribe el título que deseas eliminar.', true);
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`${API_URL}/por-ver/${encodeURIComponent(titulo)}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await respuesta.json();
+
+                if (respuesta.ok) {
+                    mostrarMensaje(data.mensaje);
+                    limpiarInputs();
+                    cargarPorVer();
+                } else {
+                    mostrarMensaje(`Error ${respuesta.status}: ${data.error}`, true);
+                }
+            } catch (error) {
+                mostrarMensaje('Error de red al intentar eliminar.', true);
+            }
+        }
+
+        window.onload = cargarPorVer;
+    </script>
+</body>
+</html>
