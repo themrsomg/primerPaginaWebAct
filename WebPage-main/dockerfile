@@ -1,0 +1,23 @@
+# Usamos la imagen oficial de Node.js (versión 22 como la que tienes instalada)
+FROM node:22-alpine
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de definición de dependencias
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar el resto del código (incluyendo la carpeta src)
+COPY . .
+
+# Exponer el puerto que usa la app (3000 por defecto según app.js)
+EXPOSE 3000
+
+# Variable de entorno por defecto
+ENV PORT=3000
+
+# Comando para arrancar la aplicación
+CMD ["node", "src/app.js"]
