@@ -1,16 +1,3 @@
-# Santabarbara
-
-Equipo Santabarbara 
-
-Nombrado en honor de nuestro compañero Rodrigo Santabárbara Murrieta 2004-2025
-
-Genaro Alejandro Barradas Sánchez
-
-Omar Morales García 
-
-Martinez Ramirez Alejandro
-
-
 # Gestor de Series - API de Seguimiento "Por Ver"
 
 Este proyecto consiste en una aplicación web que permite gestionar una lista de series pendientes por ver. Utiliza una API propia construida en Node.js que consume datos reales de la API pública de TVMaze para obtener detalles técnicos de las producciones.
